@@ -13,6 +13,7 @@ from dash import html
 
 from convoscrape.scrape import run_scraper
 from convoscrape.convoutils import get_current_corpora
+from convoscrape.convoutils import update_corpus
 from convoscrape.utils import search_help
 
 app = dash.Dash(__name__, title="cscrape", external_stylesheets=[dbc.themes.YETI, dbc.icons.FONT_AWESOME])
@@ -66,9 +67,7 @@ output_table = html.Div(id="output-table")
 OUTPUT_ROW = dbc.Row(dbc.Col(output_table,
                              width={'size':10, 'offset':1}))
 
-#alert = dbc.Alert(id='tbl_out'),
-#ALERT_ROW = dbc.Row(dbc.Col(alert,
-#                            width={'size':5, 'offset':1}))
+
 
 tab1_content = dbc.Card(dbc.CardBody([INPUT_ROW,
                 LINE_BREAK,
@@ -147,9 +146,28 @@ def search(n_clicks, search_string, num_terms):
 
         input_group_corpora = dbc.InputGroup([select_corpora, add_to_corpus_button])
 
-        return [results_header, input_group_corpora, LINE_BREAK, table], ""
+        SAVED_ROW = dbc.Row(dbc.Col(dbc.Alert(id="alert-saved", color="success", is_open=False, duration=2000), width={'size':10, 'offset':1}))
+        return [results_header, input_group_corpora, LINE_BREAK, SAVED_ROW, LINE_BREAK, table], ""
     else:
         raise dash.exceptions.PreventUpdate
+
+
+@app.callback([Output("alert-saved", "is_open"),
+               Output("alert-saved", "children")],
+              [Input("add-to-corpus-button", "n_clicks"),
+               State("select-corpora", "value"),
+               State("tbl", "data")])
+def add_to_corpus(n_clicks, corpus, data):
+    if n_clicks:
+        if "NEW" in corpus:
+            # ask for name
+            # create subdirectory
+            string = "Could not save!"
+        else:
+            success = update_corpus(corpus, data)
+
+            string = f"Saved data to \"{corpus}\" corpus" if success else f"Could not save!"
+        return True, string
 
 
 

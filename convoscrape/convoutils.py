@@ -16,4 +16,14 @@ def get_current_corpora():
     return subfolders
 
 
+def create_subdirectory(subdirectory_name):
+    try:
+        os.makedirs(os.path.join("data/corpora", subdirectory_name))
+        print(f"Successfully created subdirectory '{subdirectory_name}' inside 'data/corpora'")
+    except OSError as e:
+        print(f"Error: {e}")
 
+
+def update_corpus(corpus, data):
+    # if add data to various utterance and speaker files
+    return True
