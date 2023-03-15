@@ -17,6 +17,7 @@ ipykernel = "^6.21.3"
 dash = "^2.8.1"
 dash-bootstrap-components = "^1.4.0"
 snscrape = "^0.6.1"
+convokit = "^2.5.3"
 
 [tool.poetry.dev-dependencies]
 pynvim = "^0.4.3"

@@ -7,3 +7,19 @@ Facts:
 
 This tool has a simple goal: connect snscrape with convokit. This will allow users to build custom conversation datasets (in the format of convokit) by scraping fron social networking sites. 
 
+## Installing 
+
+Clone the repo. Then: 
+
+```sh
+poetry install
+```
+
+## Running 
+
+```sh
+poetry shell
+cscrape serve
+```
+
+This will pull up the browser based UI
