@@ -16,6 +16,14 @@ from convoscrape.convoutils import get_current_corpora
 from convoscrape.convoutils import update_corpus
 from convoscrape.utils import search_help
 
+from convokit import Corpus
+
+import pathlib
+
+
+ROOT = os.path.abspath(os.getcwd())
+
+
 app = dash.Dash(__name__, title="cscrape", external_stylesheets=[dbc.themes.YETI, dbc.icons.FONT_AWESOME])
 server = app.server #nee
 
@@ -23,6 +31,11 @@ LINE_BREAK = dbc.Row(html.Br())
 LINE = dbc.Row(html.Hr())
 
 DEFAULT_VALUE = "from:anadoluajansi since:2023-02-05 until:2023-02-27"
+
+
+temp_data_table = pd.DataFrame()
+
+
 
 # Top heading and logo
 heading = [html.H2("🏗️ CONVOSCRAPE (v0.1)"),
@@ -57,10 +70,7 @@ SLIDER_ROW = dbc.Row(dbc.Col(slider_num_returns,
 
 
 SPINNER_ROW = dbc.Row(dbc.Spinner(html.Div(id="spinner")))
-# Output row
-#alert = dbc.Alert(id="error-alert", color="danger", is_open=False, duration=2000)
 
-#ALERT_ROW = dbc.Row(dbc.Col(alert, width={'size':5, "offset":1}))
 
 output_table = html.Div(id="output-table")
 
@@ -68,6 +78,7 @@ OUTPUT_ROW = dbc.Row(dbc.Col(output_table,
                              width={'size':10, 'offset':1}))
 
 
+SAVED_ROW = dbc.Row(dbc.Col(dbc.Alert(id="alert-saved", color="success", is_open=False, duration=2000), width={'size':10, 'offset':1}))
 
 tab1_content = dbc.Card(dbc.CardBody([INPUT_ROW,
                 LINE_BREAK,
@@ -75,7 +86,8 @@ tab1_content = dbc.Card(dbc.CardBody([INPUT_ROW,
                 LINE_BREAK,
                 SPINNER_ROW,
                 OUTPUT_ROW,
-                LINE_BREAK]))
+                LINE_BREAK,
+                SAVED_ROW]))
 
 tab2_content = dbc.Card(dbc.CardBody([]))
 
@@ -95,21 +107,6 @@ app.layout = html.Div([LINE_BREAK,
                        LINE,
                        LINE_BREAK,
                        TABS_ROW])
-"""
-app.layout = html.Div([LINE_BREAK,
-                       HEADER_ROW,
-                       LINE_BREAK,
-                       LINE,
-                       LINE_BREAK,
-                       INPUT_ROW,
-                       LINE_BREAK,
-                       SLIDER_ROW,
-                       LINE_BREAK,
-                       SPINNER_ROW,
-                       OUTPUT_ROW,
-                       LINE_BREAK,
-                       ])
-"""
 
 ############# CALLBACKS ############################
 @app.callback(
@@ -119,13 +116,20 @@ app.layout = html.Div([LINE_BREAK,
      State("search-text-input", "value"),
      State("slider-num-returns", "value")])
 def search(n_clicks, search_string, num_terms):
-    if n_clicks:
+     global temp_data_table
+
+     if n_clicks:
+        temp_data_table = pd.DataFrame()
         # Run the snscraper function and put into pandas dataframe
         df = run_scraper(search_string, num_terms)
 
+        df_limited = df[['text', 'speaker']]
+
+        temp_data_table = df
+
         # initialize a dash table with this dataframe
-        table = dash_table.DataTable(data=df.to_dict('records'),
-                                     columns=[{"name": i, "id": i} for i in df.columns],
+        table = dash_table.DataTable(data=df_limited.to_dict('records'),
+                                     columns=[{"name": i, "id": i} for i in df_limited.columns],
                                      style_data={
                                          'whiteSpace': 'normal',
                                          'height': 'auto'},
@@ -146,29 +150,29 @@ def search(n_clicks, search_string, num_terms):
 
         input_group_corpora = dbc.InputGroup([select_corpora, add_to_corpus_button])
 
-        SAVED_ROW = dbc.Row(dbc.Col(dbc.Alert(id="alert-saved", color="success", is_open=False, duration=2000), width={'size':10, 'offset':1}))
         return [results_header, input_group_corpora, LINE_BREAK, SAVED_ROW, LINE_BREAK, table], ""
-    else:
+     else:
         raise dash.exceptions.PreventUpdate
 
 
 @app.callback([Output("alert-saved", "is_open"),
                Output("alert-saved", "children")],
               [Input("add-to-corpus-button", "n_clicks"),
-               State("select-corpora", "value"),
-               State("tbl", "data")])
-def add_to_corpus(n_clicks, corpus, data):
+               State("select-corpora", "value")])
+def add_to_corpus(n_clicks, corpus_name):
+    global temp_data_table
     if n_clicks:
-        if "NEW" in corpus:
-            # ask for name
-            # create subdirectory
-            string = "Could not save!"
+        if not corpus_name:
+            print("Choose a corpus!")
+            return False, ""
         else:
-            success = update_corpus(corpus, data)
-
-            string = f"Saved data to \"{corpus}\" corpus" if success else f"Could not save!"
-        return True, string
-
+            print("Updating")
+            success = update_corpus(corpus_name, temp_data_table)
+            if success:
+                return True, ["Saved!"]
+            return False, ["Failed saving"]
+    else:
+        raise dash.exceptions.PreventUpdate
 
 
 def get_select_dropdown():
@@ -182,16 +186,7 @@ def get_select_dropdown():
         select = dbc.Select(id="select-corpora",
                             placeholder="Select corpora ...",
                             options=options)
-    else:
-        options = [{"label": "NEW", "value": "NEW"}]
-        select = dbc.Select(id="select-corpora",
-                            placeholder="Select NEW to make a new corpus...",
-                            options=options)
     return select
-
-#@app.callback(Output('tbl_out', 'children'), Input('tbl', 'active_cell'))
-#def update_graphs(active_cell):
-#    return str(active_cell) if active_cell else "Click the table"
 
 
 #########################

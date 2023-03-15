@@ -1103,6 +1103,14 @@ docs = ["myst-parser", "pydata-sphinx-theme", "sphinx", "sphinxcontrib-github-al
 test = ["pep440", "pre-commit", "pytest", "testpath"]
 
 [[package]]
+name = "ndjson"
+version = "0.3.1"
+description = "JsonDecoder for ndjson"
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "nest-asyncio"
 version = "1.5.6"
 description = "Patch asyncio to allow nested event loops"
@@ -2096,7 +2104,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "flake8 (<5)", "pytest-co
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "fb87c10d861ba7df8e9d02923607470f543eed61c7d41176e63c014cb542b102"
+content-hash = "1dddd356839873dd260b59490251ac5f6448d37cd202c216a7e61f2dcf0adaad"
 
 [metadata.files]
 anyio = []
@@ -2251,6 +2259,7 @@ nbclassic = []
 nbclient = []
 nbconvert = []
 nbformat = []
+ndjson = []
 nest-asyncio = []
 nltk = []
 notebook = []
