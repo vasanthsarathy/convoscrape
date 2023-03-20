@@ -11,7 +11,7 @@ import pandas as pd
 
 from dash import html
 
-from convoscrape.scrape import run_scraper
+from convoscrape.scrape import run_search_scraper, get_conversations
 from convoscrape.convoutils import get_current_corpora
 from convoscrape.convoutils import update_corpus
 from convoscrape.utils import search_help
@@ -49,13 +49,17 @@ input_group = dbc.InputGroup(
         dbc.Input(id="search-text-input",
                   placeholder="Enter your search string here ...",
                   value=DEFAULT_VALUE),
-        dbc.Button("Search", id="search-button", n_clicks=0),
+        dbc.Button("Search", id="search-button", n_clicks=0)
     ]
 )
 
-INPUT_ROW = dbc.Row(dbc.Col([dcc.Markdown("### Enter a search string:"),
-                             input_group],
-                            width={'size':10, 'offset':1}))
+
+conversation_input_toggle = dbc.Checklist(
+    options=[{"label": "Include conversations", "value": 1},],
+    value=[1],
+    id="conversations-input",
+    switch=True)
+
 
 slider_num_returns = dcc.Slider(1, 100, 1,
                                 value=10,
@@ -64,9 +68,24 @@ slider_num_returns = dcc.Slider(1, 100, 1,
                                          "always_visible": True},
                                 id='slider-num-returns'),
 
-
 SLIDER_ROW = dbc.Row(dbc.Col(slider_num_returns,
-                             width={'size':10, 'offset':1}))
+                             width={'size':6, 'offset':0}))
+
+
+CONFIG_ROW = dbc.Row(dbc.Col(
+    [
+        dcc.Markdown("Number of Tweets:"),
+        #slider_num_returns,
+        SLIDER_ROW,
+        #dcc.Markdown("Include other tweets in the conversation:"),
+        conversation_input_toggle
+    ],
+    width={'size':10, 'offset':1}))
+
+INPUT_ROW = dbc.Row(dbc.Col([dcc.Markdown("### Enter a search string:"),
+                             input_group],
+                            width={'size':10, 'offset':1}))
+
 
 
 SPINNER_ROW = dbc.Row(dbc.Spinner(html.Div(id="spinner")))
@@ -82,7 +101,7 @@ SAVED_ROW = dbc.Row(dbc.Col(dbc.Alert(id="alert-saved", color="success", is_open
 
 tab1_content = dbc.Card(dbc.CardBody([INPUT_ROW,
                 LINE_BREAK,
-                SLIDER_ROW,
+                CONFIG_ROW,
                 LINE_BREAK,
                 SPINNER_ROW,
                 OUTPUT_ROW,
@@ -114,16 +133,22 @@ app.layout = html.Div([LINE_BREAK,
     Output('spinner', 'value')],
     [Input("search-button", "n_clicks"),
      State("search-text-input", "value"),
-     State("slider-num-returns", "value")])
-def search(n_clicks, search_string, num_terms):
+     State("slider-num-returns", "value"),
+     State("conversations-input", "value")])
+def search(n_clicks, search_string, num_terms, conversation_toggle):
      global temp_data_table
 
      if n_clicks:
         temp_data_table = pd.DataFrame()
         # Run the snscraper function and put into pandas dataframe
-        df = run_scraper(search_string, num_terms)
+        df = run_search_scraper(search_string, num_terms)
 
-        df_limited = df[['text', 'speaker']]
+        if conversation_toggle:
+            # Getting full conversations.
+            print("Getting full conversations")
+            df = get_conversations(df)
+
+        df_limited = df[['text', 'speaker', 'id', 'conversation_id']]
 
         temp_data_table = df
 
@@ -141,6 +166,7 @@ def search(n_clicks, search_string, num_terms):
 
         # Inputs to add data to corpora
         select_corpora = get_select_dropdown()
+
 
         # Button to add the results to the corpus
         add_to_corpus_button = dbc.Button("Add to corpus",
@@ -173,6 +199,7 @@ def add_to_corpus(n_clicks, corpus_name):
             return False, ["Failed saving"]
     else:
         raise dash.exceptions.PreventUpdate
+
 
 
 def get_select_dropdown():

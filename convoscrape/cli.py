@@ -36,7 +36,25 @@ def serve(ctx, **kwargs):
     ctx.obj.update(kwargs)
     websvc.main()
 
+
+@click.command()
+@add_options(shared_options)
+@click.option('--config', default="configs/turkey.yaml", help="Provide experiment configuration file")
+@click.pass_context
+def search(ctx, **kwargs):
+    from convoscrape import pipelines
+    ctx.obj.update(kwargs)
+    success = pipelines.search(ctx.obj)
+
+    if success:
+        click.secho("Done", bold=True, fg="green")
+    else:
+        click.secho("Search and Save failed", bold=True, fg="red")
+
+
+
 cli.add_command(serve)
+cli.add_command(search)
 
 def main():
     cli(obj={})
